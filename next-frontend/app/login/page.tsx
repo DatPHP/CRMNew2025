@@ -5,83 +5,82 @@ import { useState } from 'react'
 import axios from 'axios'
 import { useRouter } from 'next/navigation'
 import jsCookie from 'js-cookie'
-import { TextField, Button, Box, Typography } from '@mui/material'
-import Swal from 'sweetalert2'  // Import SweetAlert2
+import Swal from 'sweetalert2'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    setLoading(true)
+
     try {
-
-
-     const response = await axios.post('http://localhost:8000/api/login', {
+      const response = await axios.post('http://localhost:8000/api/login', {
         email,
         password,
       })
 
-      // Ensure successful login
-      if (response.status === 200) {
+      // Store token and user name in cookies
+      jsCookie.set('token', response.data.token)
+      jsCookie.set('userName', response.data.user.name)
 
-        console.log(response);
-        // Save the token and user name in cookies or localStorage
-        jsCookie.set('token', response?.data?.token)
-        jsCookie.set('userName', response?.data?.user.name ?? 'Henry' )  // Assuming the response contains user data
-
-        // Use SweetAlert2 to show success message and then redirect
-        Swal.fire({
-          title: 'Login Successful',
-          text: 'You have logged in successfully.',
-          icon: 'success',
-          confirmButtonText: 'OK',
-        }).then(() => {
-          router.push('/')  // Redirect to homepage or dashboard after login
-        })
-      }
-
-
-
+      // Show success alert and redirect to homepage
+      Swal.fire({
+        title: 'Login Successful',
+        text: 'You have logged in successfully!',
+        icon: 'success',
+        confirmButtonText: 'OK',
+      }).then(() => {
+        router.push('/homepage')  // Redirect to homepage after login
+      })
     } catch (error) {
       console.log(error)
       Swal.fire({
-        title: 'Error!',
-        text: 'Login failed. Please check your credentials.',
+        title: 'Login Failed',
+        text: 'Please check your credentials and try again.',
         icon: 'error',
-        confirmButtonText: 'Try Again',
+        confirmButtonText: 'Close',
       })
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
-    <Box sx={{ maxWidth: 400, margin: 'auto', padding: 3 }}>
-      <Typography variant="h5" gutterBottom>Login</Typography>
-      <form onSubmit={handleSubmit}>
-        <TextField
-          label="Email"
+    <div className="flex justify-center items-center h-screen bg-gray-100">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white p-8 rounded shadow-md w-96"
+      >
+        <h2 className="text-2xl mb-4 text-center">Login</h2>
+        <input
           type="email"
-          fullWidth
-          margin="normal"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
           required
+          className="border p-2 w-full mb-4"
         />
-        <TextField
-          label="Password"
+        <input
           type="password"
-          fullWidth
-          margin="normal"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
           required
+          className="border p-2 w-full mb-4"
         />
-        <Button type="submit" variant="contained" color="primary" fullWidth>
-          Login
-        </Button>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full p-2 bg-blue-600 text-white rounded"
+        >
+          {loading ? 'Logging in...' : 'Login'}
+        </button>
       </form>
-    </Box>
+    </div>
   )
 }
